@@ -31,7 +31,28 @@ class CarInterface(CarInterfaceBase):
     # Speed conversion:              20, 45 mph
     ret.wheelbase = 3.089  # in meters for Pacifica Hybrid 2017
     ret.steerRatio = 16.2  # Pacifica Hybrid 2017
-    ret.mass = 2858. + STD_CARGO_KG  # kg curb weight Pacifica Hybrid 2017
+    ret.mass = 1964. + STD_CARGO_KG  # kg curb weight Pacifica Hybrid 2017
+
+    ## XPS TUNE ###
+
+    ret.lateralTuning.pid.kpBP = [0., 10., 30.]
+    ret.lateralTuning.pid.kpV = [0.03, 0.05, 0.06]
+
+    ret.lateralTuning.pid.kiBP = [0., 30.]
+    ret.lateralTuning.pid.kiV = [0.02, 0.03]
+
+    ret.lateralTuning.pid.kdBP = [0.]
+    ret.lateralTuning.pid.kdV = [10.]
+
+    ret.lateralTuning.pid.kfBP = [0.]
+    ret.lateralTuning.pid.kfV = [0.00002]   # full torque for 10 deg at 80mph means 0.00007818594
+
+    #########
+
+    ret.steerActuatorDelay = 0.01
+    ret.steerRateCost = 0.35
+    ret.steerLimitTimer = 0.7
+
     ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[9., 20.], [9., 20.]]
     ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.15, 0.30], [0.03, 0.05]]
     ret.lateralTuning.pid.kf = 0.00006   # full torque for 10 deg at 80mph means 0.00007818594
