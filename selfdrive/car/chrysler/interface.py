@@ -35,30 +35,36 @@ class CarInterface(CarInterfaceBase):
 
     ## XPS TUNE ###
 
-    ret.lateralTuning.pid.kpBP = [0., 10., 30.]
-    ret.lateralTuning.pid.kpV = [0.03, 0.05, 0.06]
+    ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10., 30.], [0., 30.]]
+    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.03, 0.05, 0.06], [0.02, 0.03]]
+    ret.lateralTuning.pid.kf = 0.00002   # full torque for 10 deg at 80mph means 0.00007818594
+    ret.steerActuatorDelay = 0.1
+    ret.steerRateCost = 0.4
+    ret.steerLimitTimer = 0.7
 
-    ret.lateralTuning.pid.kiBP = [0., 30.]
-    ret.lateralTuning.pid.kiV = [0.02, 0.03]
+    ### OLD XPS TUNE ###
 
-    ret.lateralTuning.pid.kdBP = [0.]
-    ret.lateralTuning.pid.kdV = [10.]
-
-    ret.lateralTuning.pid.kfBP = [0.]
-    ret.lateralTuning.pid.kfV = [0.00002]   # full torque for 10 deg at 80mph means 0.00007818594
+    #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10.], [0., 30.]]
+    #ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.01, 0.03], [0.02, 0.03]]
+    #ret.lateralTuning.pid.kf = 0.00002   # full torque for 10 deg at 80mph means 0.00007818594
+    #ret.steerActuatorDelay = 0.1
+    #ret.steerRateCost = 0.4
+    #ret.steerLimitTimer = 0.7
 
     #########
 
-    ret.steerActuatorDelay = 0.01
-    ret.steerRateCost = 0.35
-    ret.steerLimitTimer = 0.7
+    #ret.steerActuatorDelay = 0.01
+    #ret.steerRateCost = 0.35
+    #ret.steerLimitTimer = 0.7
 
-    ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[9., 20.], [9., 20.]]
-    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.15, 0.30], [0.03, 0.05]]
-    ret.lateralTuning.pid.kf = 0.00006   # full torque for 10 deg at 80mph means 0.00007818594
-    ret.steerActuatorDelay = 0.1
-    ret.steerRateCost = 0.7
-    ret.steerLimitTimer = 0.4
+    ### LKAS TUNE ###
+
+    #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[9., 20.], [9., 20.]]
+    #ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.15, 0.30], [0.03, 0.05]]
+    #ret.lateralTuning.pid.kf = 0.00006   # full torque for 10 deg at 80mph means 0.00007818594
+    #ret.steerActuatorDelay = 0.1
+    #ret.steerRateCost = 0.7
+    #ret.steerLimitTimer = 0.4
 
     if candidate in (CAR.JEEP_CHEROKEE, CAR.JEEP_CHEROKEE_2019):
       ret.wheelbase = 2.91  # in meters
