@@ -42,6 +42,8 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.4
     ret.steerLimitTimer = 0.7
 
+    ret.minSteerSpeed = 0.
+
     ### OLD XPS TUNE ###
 
     #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10.], [0., 30.]]
