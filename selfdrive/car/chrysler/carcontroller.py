@@ -95,7 +95,7 @@ class CarController():
     lkas_active = True #moving_fast and enabled
 
     if not lkas_active:
-      apply_steer = 0
+      apply_steer = True # 0
 
     self.apply_steer_last = apply_steer
 
