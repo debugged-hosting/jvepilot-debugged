@@ -72,6 +72,7 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.91  # in meters
       ret.steerRatio = 12.7
       ret.steerActuatorDelay = 0.2  # in seconds
+      ret.enableBsm = True
 
     ret.centerToFront = ret.wheelbase * 0.44
 
@@ -89,6 +90,8 @@ class CarInterface(CarInterfaceBase):
 
     ret.enableCamera = True
     ret.openpilotLongitudinalControl = ret.enableCamera  # kind of...
+
+    ret.enableBsm |= 720 in fingerprint[0]
 
     return ret
 
