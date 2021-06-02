@@ -33,14 +33,34 @@ class CarInterface(CarInterfaceBase):
     ret.steerRatio = 16.2  # Pacifica Hybrid 2017
     ret.mass = 1964. + STD_CARGO_KG  # kg curb weight Pacifica Hybrid 2017
 
-    ## XPS TUNE ###
+    ## NEW TUNE (wip) ##
 
-    ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10., 30.], [0., 30.]]
-    ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.03, 0.05, 0.06], [0.02, 0.03]]
-    ret.lateralTuning.pid.kf = 0.00002   # full torque for 10 deg at 80mph means 0.00007818594
-    ret.steerActuatorDelay = 0.1
-    ret.steerRateCost = 0.4
+    ret.lateralTuning.pid.kpBP = [0., 10., 30.]
+    ret.lateralTuning.pid.kpV = [0.03, 0.05, 0.07]
+
+    ret.lateralTuning.pid.kiBP = [0., 30.]
+    ret.lateralTuning.pid.kiV = [0.02, 0.06]
+
+    #ret.lateralTuning.pid.kdBP = [0.]
+    #ret.lateralTuning.pid.kdV = [10.]
+
+    #ret.lateralTuning.pid.kfBP = [0., 30.]
+    #ret.lateralTuning.pid.kfV = [0.00002, 0.000035]   # full torque for 10 deg at 80mph means 0.00007818594
+    ret.lateralTuning.pid.kf = [0.00002, 0.000035] # full torque for 10 deg at 80mph means 0.00007818594
+
+    ret.steerActuatorDelay = 0.01
+    ret.steerRateCost = 0.7
     ret.steerLimitTimer = 0.7
+
+    ## WORKING TUNE ###
+
+    #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10., 30.], [0., 30.]]
+    #ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.03, 0.05, 0.06], [0.02, 0.03]]
+    #ret.lateralTuning.pid.kf = 0.00002   # full torque for 10 deg at 80mph means 0.00007818594
+
+    #ret.steerActuatorDelay = 0.1
+    #ret.steerRateCost = 0.4
+    #ret.steerLimitTimer = 0.7
 
     ret.minSteerSpeed = 0.
 
