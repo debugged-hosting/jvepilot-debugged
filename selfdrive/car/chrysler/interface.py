@@ -27,6 +27,9 @@ class CarInterface(CarInterfaceBase):
 
     # Chrysler port is a community feature, since we don't own one to test
     ret.communityFeature = True
+    
+    # TrafficFlow can steer to 0
+    ret.minSteerSpeed = 0.
 
     # Speed conversion:              20, 45 mph
     ret.wheelbase = 3.089  # in meters for Pacifica Hybrid 2017
@@ -48,10 +51,6 @@ class CarInterface(CarInterfaceBase):
     #ret.lateralTuning.pid.kfV = [0.00002, 0.000035]   # full torque for 10 deg at 80mph means 0.00007818594
     ret.lateralTuning.pid.kf = [0.00002, 0.000035] # full torque for 10 deg at 80mph means 0.00007818594
 
-    ret.steerActuatorDelay = 0.01
-    ret.steerRateCost = 0.7
-    ret.steerLimitTimer = 0.7
-
     ## WORKING TUNE ###
 
     #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10., 30.], [0., 30.]]
@@ -62,31 +61,13 @@ class CarInterface(CarInterfaceBase):
     #ret.steerRateCost = 0.4
     #ret.steerLimitTimer = 0.7
 
-    ret.minSteerSpeed = 0.
 
-    ### OLD XPS TUNE ###
+    ### 17 GAS CHRYSLER PACIFICA SETTINGS ###
 
-    #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[0., 10.], [0., 30.]]
-    #ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.01, 0.03], [0.02, 0.03]]
-    #ret.lateralTuning.pid.kf = 0.00002   # full torque for 10 deg at 80mph means 0.00007818594
-    #ret.steerActuatorDelay = 0.1
-    #ret.steerRateCost = 0.4
-    #ret.steerLimitTimer = 0.7
+    ret.steerActuatorDelay = 0.01
+    ret.steerRateCost = 0.7
+    ret.steerLimitTimer = 0.7
 
-    #########
-
-    #ret.steerActuatorDelay = 0.01
-    #ret.steerRateCost = 0.35
-    #ret.steerLimitTimer = 0.7
-
-    ### LKAS TUNE ###
-
-    #ret.lateralTuning.pid.kpBP, ret.lateralTuning.pid.kiBP = [[9., 20.], [9., 20.]]
-    #ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.15, 0.30], [0.03, 0.05]]
-    #ret.lateralTuning.pid.kf = 0.00006   # full torque for 10 deg at 80mph means 0.00007818594
-    #ret.steerActuatorDelay = 0.1
-    #ret.steerRateCost = 0.7
-    #ret.steerLimitTimer = 0.4
 
     if candidate in (CAR.JEEP_CHEROKEE, CAR.JEEP_CHEROKEE_2019):
       ret.wheelbase = 2.91  # in meters
