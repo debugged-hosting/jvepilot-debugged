@@ -27,7 +27,7 @@ class CarInterface(CarInterfaceBase):
 
     # Chrysler port is a community feature, since we don't own one to test
     ret.communityFeature = True
-    
+
     # TrafficFlow can steer to 0
     ret.minSteerSpeed = 0.
 
@@ -49,7 +49,7 @@ class CarInterface(CarInterfaceBase):
 
     #ret.lateralTuning.pid.kfBP = [0., 30.]
     #ret.lateralTuning.pid.kfV = [0.00002, 0.000035]   # full torque for 10 deg at 80mph means 0.00007818594
-    ret.lateralTuning.pid.kf = [0.00002, 0.000035] # full torque for 10 deg at 80mph means 0.00007818594
+    ret.lateralTuning.pid.kf = 0.00002 # [0.00002, 0.000035] # full torque for 10 deg at 80mph means 0.00007818594
 
     ## WORKING TUNE ###
 
