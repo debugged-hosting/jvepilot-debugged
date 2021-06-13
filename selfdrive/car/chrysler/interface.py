@@ -67,13 +67,13 @@ class CarInterface(CarInterfaceBase):
 
     ### 17 GAS CHRYSLER PACIFICA SETTINGS ###
 
-    #ret.steerActuatorDelay = 0.01
+    ret.steerActuatorDelay = 0.01
     #ret.steerRateCost = 0.7
     #ret.steerLimitTimer = 0.7
 
     ### OLD ###
 
-    ret.steerActuatorDelay = 0.1
+    #ret.steerActuatorDelay = 0.1
     ret.steerRateCost = 0.4
     ret.steerLimitTimer = 0.7
 
