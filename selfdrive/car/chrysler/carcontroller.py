@@ -1,6 +1,6 @@
 from selfdrive.car import apply_toyota_steer_torque_limits
 from selfdrive.car.chrysler.chryslercan import create_lkas_hud, create_lkas_command, \
-                                               create_wheel_buttons_command, create_lkas_heartbit
+  create_wheel_buttons_command, create_lkas_heartbit, create_acc_dashboard
 from selfdrive.car.chrysler.values import CAR, CarControllerParams
 from opendbc.can.packer import CANPacker
 from selfdrive.config import Conversions as CV
@@ -85,6 +85,11 @@ class CarController():
         counter_offset = 1 if self.ccframe % 12 < 4 else 0 # half the time tries the next counter
         new_msg = create_wheel_buttons_command(self, self.packer, button_counter + counter_offset, button_to_press, True)
         can_sends.append(new_msg)
+
+    if CS.accDashboard["FORWARD_4"] != -1:
+      CS.accDashboard["FORWARD_4"] = -1  # wait for next signal
+      new_msg = create_acc_dashboard(self.packer, c.hudControl.setSpeed, CS.accDashboard)
+      can_sends.append(new_msg)
 
     frame = CS.lkas_counter
     if self.prev_frame != frame:
