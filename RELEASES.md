@@ -1,14 +1,11 @@
-Version jvePilot-0.8.5(v3.5)
-========================
-Visit http://bit.ly/jvereadme for more information
-* ACC Breaking
-
 Version jvePilot-0.8.5(v3.4.1)
 ========================
+Visit http://bit.ly/jvereadme for more information
 * Fix auto high beams
 
 Version jvePilot-0.8.5(v3.4)
 ========================
+Visit http://bit.ly/jvereadme for more information
 * Use LKAS button to disable lane lines and use new model (aka 🥬)
 * Update to version 0.8.5
   * NEOS update: improved reliability and stability with better voltage regulator configuration
