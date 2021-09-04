@@ -1,9 +1,14 @@
-Version jvePilot-
+Version jvePilot-0.8.8(v3.6)
 ========================
 Visit http://bit.ly/jvereadme for more information
 * Fix UI buttons on comma three
 * Fix occasional comma three controls not starting error
 * Use speed from dashboard instead of calculated from wheel rpm
+* Steering button overhaul
+  * Cruise button disabled to prevent accidental disengage
+  * Hold ACC +/- to step by 1 (or 5) increments. No more deliberate pressing
+  * Faster and more reliable cruise speed changes
+* Fix occasional comma three controls not starting error
   
 Version jvePilot-0.8.8(v3.5.1)
 ========================
