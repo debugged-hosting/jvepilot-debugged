@@ -196,6 +196,7 @@ class CarState(CarStateBase):
       ("TRACTION_BUTTON", 1),
       ("WHEEL_BUTTONS", 50),
       ("BLIND_SPOT_WARNINGS", 2),
+      ("BRAKE_1", 100),
     ]
 
     if CP.enableBsm:
