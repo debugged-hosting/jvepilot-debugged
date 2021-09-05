@@ -4,9 +4,10 @@ Visit http://bit.ly/jvereadme for more information
 * Fix UI buttons on comma three
 * Fix occasional comma three controls not starting error
 * Use speed from dashboard instead of calculated from wheel rpm
-* Steering button overhaul
-  * Cruise button disabled to prevent accidental disengage
-  * Hold ACC +/- to step by 1 (or 5) increments. No more deliberate pressing
+* ACC control overhaul
+  * ACC always on
+  * The standard cruise button now changes ACC Eco setting 
+  * Hold ACC +/- to step by 1 (or 5) increments like how stock does it
   * Faster and more reliable cruise speed changes
   
 Version jvePilot-0.8.8(v3.5.1)

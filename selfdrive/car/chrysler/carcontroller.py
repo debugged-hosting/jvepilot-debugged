@@ -39,7 +39,6 @@ class CarController():
 
     self.cachedParams = CachedParams()
     self.autoFollowDistanceLock = None
-    self.send_wheel_message = None
 
   def update(self, enabled, CS, actuators, pcm_cancel_cmd, hud_alert, gas_resume_speed, c):
     jvepilot_state = c.jvePilotState
@@ -80,16 +79,14 @@ class CarController():
           if CS.out.cruiseState.enabled:  # Control ACC
             if self.ccframe % 4 < 2:
               buttons_to_press.append(self.hybrid_acc_button(CS, jvepilot_state))
-            if self.ccframe % 12 < 4:
+            if self.ccframe % 12 < 6:
               buttons_to_press.append(self.auto_follow_button(CS, jvepilot_state))
           elif CS.out.standstill:  # Stopped and waiting to resume
             if self.ccframe % 12 < 6:
               buttons_to_press.append(self.auto_resume_button(CS, gas_resume_speed))
 
-      self.send_wheel_message = create_wheel_buttons_command(self.packer, button_counter + 1, buttons_to_press, CS.wheelButtons)
-      can_sends.append(self.send_wheel_message)
-    elif self.send_wheel_message is not None and self.ccframe % 25 == 0:
-      can_sends.append(self.send_wheel_message)  # remind the vehicle who the boss is
+      send_wheel_message = create_wheel_buttons_command(self.packer, button_counter + 1, buttons_to_press, CS.wheelButtons)
+      can_sends.append(send_wheel_message)
 
     frame = CS.lkas_counter
     if self.prev_frame != frame:
