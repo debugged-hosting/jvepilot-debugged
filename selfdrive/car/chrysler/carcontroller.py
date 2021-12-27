@@ -39,6 +39,7 @@ class CarController():
     self.last_torque = 0.
     self.last_aTarget = 0.
     self.last_enabled = False
+    self.last_acc_cmd = None
 
     self.packer = CANPacker(dbc_name)
 
@@ -79,6 +80,10 @@ class CarController():
 
     acc_2_counter = CS.acc_2['COUNTER']
     if acc_2_counter == self.last_acc_2_counter:
+      if self.last_acc_cmd is not None:
+        can_sends.append(self.last_acc_cmd[0])
+        can_sends.append(self.last_acc_cmd[1])
+        self.last_acc_cmd = None
       return False
     self.last_acc_2_counter = acc_2_counter
 
@@ -88,6 +93,7 @@ class CarController():
       self.last_brake = None
       self.last_torque = ACCEL_TORQ_START
       self.last_aTarget = CS.out.aEgo
+      self.last_acc_cmd = None
       if self.last_enabled != enabled:
         self.last_enabled = enabled
         can_sends.append(acc_command(self.packer, acc_2_counter + 1, enabled, None, None, None, None, CS.acc_2))
@@ -160,7 +166,11 @@ class CarController():
       brake = 4
 
     #can_sends.append(acc_log(self.packer, actuators.accel, vTarget, long_starting, long_stopping))
-    can_sends.append(acc_command(self.packer, acc_2_counter + 1, True, go_req, torque, stop_req, brake, CS.acc_2))
+    can_sends.append(acc_command(self.packer, acc_2_counter, True, go_req, torque, stop_req, brake, CS.acc_2))
+    self.last_acc_cmd = [acc_command(self.packer, acc_2_counter + 1, True, go_req, torque, stop_req, brake, CS.acc_2),
+                         acc_command(self.packer, acc_2_counter + 2, True, go_req, torque, stop_req, brake, CS.acc_2)]
+    can_sends.append(self.last_acc_cmd[0])
+    can_sends.append(self.last_acc_cmd[1])
 
     return True
 
