@@ -76,7 +76,7 @@ class CarController():
     VEHICLE_MASS = 2268
     LOW_WINDOW = CV.MPH_TO_MS * 3
     COAST_WINDOW = CV.MPH_TO_MS * 2
-    BRAKE_CHANGE = 0.05
+    BRAKE_CHANGE = 0.04
 
     acc_2_counter = CS.acc_2['COUNTER']
     if acc_2_counter == self.last_acc_2_counter:
