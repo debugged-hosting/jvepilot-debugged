@@ -11,16 +11,17 @@ ButtonType = car.CarState.ButtonEvent.Type
 GAS_RESUME_SPEED = 2.
 cachedParams = CachedParams()
 opParams = opParams()
+long_control = cachedParams.get_bool('jvePilot.settings.longControl', 0)
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
-    if cachedParams.get_bool('jvePilot.settings.longControl', 1000):
+    if long_control:
       eco = cachedParams.get_float('jvePilot.carState.accEco', 1000)
       if eco == 1:
-        return CarControllerParams.ACCEL_MIN, 1.25
+        return CarControllerParams.ACCEL_MIN + 0.1, 1.33
       elif eco == 2:
-        return CarControllerParams.ACCEL_MIN, .75
+        return CarControllerParams.ACCEL_MIN + 0.1, 1.
 
     return CarControllerParams.ACCEL_MIN, CarControllerParams.ACCEL_MAX
 
@@ -88,10 +89,15 @@ class CarInterface(CarInterfaceBase):
     events = self.create_common_events(ret, extra_gears=[car.CarState.GearShifter.low],
                                        gas_resume_speed=GAS_RESUME_SPEED, pcm_enable=False)
 
-    if ret.brakePressed and ret.vEgo < GAS_RESUME_SPEED:
+    long_control = cachedParams.get_bool('jvePilot.settings.longControl', 1000)
+
+    if not long_control and ret.brakePressed and ret.vEgo < GAS_RESUME_SPEED:
       events.add(car.CarEvent.EventName.accBrakeHold)
     elif not self.CC.moving_fast:
       events.add(car.CarEvent.EventName.belowSteerSpeed)
+
+    if self.CS.cruise_error:
+      events.add(car.CarEvent.EventName.brakeUnavailable)
 
     if self.CS.button_pressed(ButtonType.cancel):
       events.add(car.CarEvent.EventName.buttonCancel)  # cancel button pressed
@@ -99,6 +105,10 @@ class CarInterface(CarInterfaceBase):
       events.add(car.CarEvent.EventName.pcmEnable)  # cruse is enabled
     elif (not ret.cruiseState.enabled) and (ret.vEgo > GAS_RESUME_SPEED or (self.CS.out.cruiseState.enabled and (not ret.standstill))):
       events.add(car.CarEvent.EventName.pcmDisable)  # give up, too fast to resume
+
+    if long_control:
+      if ret.brakePressed and not self.CS.out.brakePressed:
+        events.add(car.CarEvent.EventName.pedalPressed)
 
     ret.events = events.to_msg()
 

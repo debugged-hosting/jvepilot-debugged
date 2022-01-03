@@ -3,7 +3,7 @@ from opendbc.can.parser import CANParser
 from opendbc.can.can_define import CANDefine
 from selfdrive.config import Conversions as CV
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD
+from selfdrive.car.chrysler.values import DBC, STEER_THRESHOLD, CAR
 from common.cached_params import CachedParams
 from common.params import Params
 from common.op_params import opParams
@@ -38,6 +38,7 @@ class CarState(CarStateBase):
     self.accEnabled = False
     self.reallyEnabled = True
     self.longControl = Params().get_bool('jvePilot.settings.longControl')
+    self.hybrid = CP.carFingerprint in (CAR.PACIFICA_2017_HYBRID, CAR.PACIFICA_2018_HYBRID, CAR.PACIFICA_2019_HYBRID)
 
   def update(self, cp, cp_cam):
     min_steer_check = self.opParams.get('steer.checkMinimum')
@@ -81,11 +82,15 @@ class CarState(CarStateBase):
       ret.cruiseState.enabled = self.accEnabled
       ret.cruiseState.available = cp.vl["DASHBOARD"]["CRUISE_STATE"] == 0
       ret.cruiseState.nonAdaptive = cp.vl["DASHBOARD"]["CRUISE_STATE"] != 0
+      if self.hybrid:
+        self.hybridAxleTorq = cp.vl["AXLE_TORQ"]
+        self.acc_1 = cp.vl["ACC_1"]
     else:
       ret.cruiseState.enabled = cp.vl["ACC_2"]["ACC_ENABLED"] == 1  # ACC is green.
       ret.cruiseState.available = cp.vl["DASHBOARD"]['CRUISE_STATE'] in [3,4]  # the comment below says 3 and 4 are ACC mode
       ret.cruiseState.nonAdaptive = cp.vl["DASHBOARD"]["CRUISE_STATE"] in [1, 2]
 
+    self.cruise_error = cp.vl["ACC_2"]["STS"] != 0  # is this the cruise error?
     ret.cruiseState.speed = cp.vl["DASHBOARD"]["ACC_SPEED_CONFIG_KPH"] * CV.KPH_TO_MS
     # CRUISE_STATE is a three bit msg, 0 is off, 1 and 2 are Non-ACC mode, 3 and 4 are ACC mode, find if there are other states too
     self.dashboard = cp.vl["DASHBOARD"]
@@ -157,6 +162,8 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_can_parser(CP):
+    hybrid = CP.carFingerprint in (CAR.PACIFICA_2017_HYBRID, CAR.PACIFICA_2018_HYBRID, CAR.PACIFICA_2019_HYBRID)
+
     signals = [
       # sig_name, sig_address, default
       ("PRNDL", "GEAR", 0),
@@ -222,6 +229,19 @@ class CarState(CarStateBase):
       ("ENGINE_RPM", "ACCEL_PEDAL_MSG", 0),
     ]
 
+    if hybrid:
+      signals += [
+        ("AXLE_TORQ_MIN", "AXLE_TORQ", 0),
+        ("AXLE_TORQ_MAX", "AXLE_TORQ", 0),
+
+        ("COUNTER", "ACC_1", 0),
+        ("ACC_TORQ_REQ", "ACC_1", 0),
+        ("ACC_TORQ", "ACC_1", 0),
+        ("FORWARD_1", "ACC_1", 0),
+        ("FORWARD_2", "ACC_1", 0),
+        ("FORWARD_3", "ACC_1", 0),
+      ]
+
     checks = [
       # sig_address, frequency
       ("BRAKE_2", 50),
@@ -244,6 +264,12 @@ class CarState(CarStateBase):
       ("SENSORS", 50),
       ("ACCEL_PEDAL_MSG", 50),
     ]
+
+    if hybrid:
+      checks += [
+        ("AXLE_TORQ", 50),
+        ("ACC_1", 50),
+      ]
 
     if CP.enableBsm:
       signals += [
