@@ -160,6 +160,7 @@ class Controls:
     self.current_alert_types = [ET.PERMANENT]
     self.logged_comm_issue = False
 
+    self.longControl = params.get_bool('jvePilot.settings.longControl')
     self.v_target = 0.
     self.buttonPressTimes = {}
     self.cachedParams = CachedParams()
@@ -409,7 +410,7 @@ class Controls:
     if self.jvePilotState.notifyUi:
       self.ui_notify()
     elif self.sm.updated['jvePilotUIState']:
-      self.jvePilotState.carControl.autoFollow = self.sm['jvePilotUIState'].autoFollow
+      self.jvePilotState.carControl.autoFollow = self.sm['jvePilotUIState'].autoFollow == 1
       self.jvePilotState.carControl.accEco = self.sm['jvePilotUIState'].accEco
       put_nonblocking("jvePilot.carState.accEco", str(self.sm['jvePilotUIState'].accEco))
 
@@ -420,7 +421,7 @@ class Controls:
 
     msg = messaging.new_message('jvePilotUIState')
     msg.jvePilotUIState = self.sm['jvePilotUIState']
-    msg.jvePilotUIState.autoFollow = self.jvePilotState.carControl.autoFollow
+    msg.jvePilotUIState.autoFollow = -1 if self.longControl else (1 if self.jvePilotState.carControl.autoFollow else 0)
     msg.jvePilotUIState.accEco = self.jvePilotState.carControl.accEco
     msg.jvePilotUIState.useLaneLines = self.jvePilotState.carControl.useLaneLines
     self.pm.send('jvePilotState', msg)
