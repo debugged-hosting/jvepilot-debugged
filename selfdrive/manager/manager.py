@@ -48,11 +48,12 @@ def manager_init():
     ("jvePilot.settings.disableOnGas", "0"),
     ("jvePilot.settings.audioAlertOnSteeringLoss", "1"),
     ("jvePilot.settings.longControl", "0"),
+    ("jvePilot.settings.longControl.maxTorq", "360"),
     ("jvePilot.settings.deviceOffset", "0.00"),
     ("jvePilot.settings.reverseAccSpeedChange", "1"),
     ("jvePilot.settings.slowInCurves", "1"),
     ("jvePilot.settings.slowInCurves.speedRatio", "1.0"),
-    ("jvePilot.settings.slowInCurves.speedDropOff", "2.0"),
+    ("jvePilot.settings.slowInCurves.speedDropOff", "1.96"),
     ("jvePilot.settings.slowInCurves.speedDropOffAngle", "0.0"),
 
     ("CompletedTrainingVersion", "0"),

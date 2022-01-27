@@ -10,7 +10,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import V_CRUISE_MIN, V_CRUISE_MIN_IMPERIAL
 from common.cached_params import CachedParams
 from common.op_params import opParams
-from common.params import Params
+from common.params import Params, put_nonblocking
 from cereal import car
 import math
 
@@ -23,20 +23,24 @@ AUTO_FOLLOW_LOCK_MS = 3 * CV.MPH_TO_MS
 ACC_BRAKE_THRESHOLD = 2 * CV.MPH_TO_MS
 
 # LONG PARAMS
-ACCEL_TORQ_LOW = 80
-ACCEL_TORQ_MIN = 20
-ACCEL_TORQ_MAX = 360
-UNDER_ACCEL_MULTIPLIER = 1.
-TORQ_RELEASE_CHANGE = ACCEL_TORQ_MAX / 100
 VEHICLE_MASS = 2268
 LOW_WINDOW = CV.MPH_TO_MS * 5
-SLOW_WINDOW = CV.MPH_TO_MS * 10
+SLOW_WINDOW = CV.MPH_TO_MS * 20
 COAST_WINDOW = CV.MPH_TO_MS * 2
-BRAKE_CHANGE = 0.05
-ADJUST_ACCEL_COOLDOWN = 0.2
-START_ADJUST_ACCEL_FRAMES = 100
-ACCEL_TO_NM = 1200
+
+# accelerator
+ACCEL_TORQ_SLOW = 40  # add this when going SLOW
+# ACCEL_TORQ_MAX = 360
+UNDER_ACCEL_MULTIPLIER = 1.
+TORQ_RELEASE_CHANGE = 0.35
 TORQ_ADJUST_THRESHOLD = 0.3
+START_ADJUST_ACCEL_FRAMES = 100
+ADJUST_ACCEL_COOLDOWN = 0.2
+MIN_TORQ_CHANGE = 2
+ACCEL_TO_NM = 1200
+
+# braking
+BRAKE_CHANGE = 0.06
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -104,6 +108,8 @@ class CarController():
 
     if not enabled:
       self.torq_adjust = 0
+      self.last_brake = None
+      self.last_torque = None
       return
 
     under_accel_frame_count = 0
@@ -117,20 +123,19 @@ class CarController():
       go_req = long_starting and CS.out.standstill
       stop_req = long_stopping or (CS.out.standstill and aTarget == 0 and not go_req)
 
-      if go_req or CS.out.vEgo < LOW_WINDOW:
+      if go_req:
         under_accel_frame_count = self.under_accel_frame_count = START_ADJUST_ACCEL_FRAMES  # ready to add torq
+        self.last_brake = None
 
-      accel_min, accel_max = self.acc_min_max(CS)
       currently_braking = self.last_brake is not None
       speed_to_far_off = CS.out.vEgo - vTarget > CV.MPH_TO_MS * 2  # gap
-      not_slowing_fast_enough = not currently_braking and speed_to_far_off and vTarget < CS.out.vEgo + CS.out.aEgo  # not going to get there
-      engine_brake = aTarget <= 0 and self.torque(CS, aTarget, vTarget) > accel_min and vTarget > SLOW_WINDOW
+      engine_brake = aTarget <= 0 and self.torque(CS, aTarget, vTarget) > CS.torqMin and vTarget > LOW_WINDOW
 
-      if aTarget < 0 and (currently_braking or not_slowing_fast_enough):  # brake
-        self.acc_brake(CS, aTarget, vTarget, speed_to_far_off)
-
-      elif (aTarget > 0 or engine_brake) and not currently_braking:  # gas
+      if go_req or ((aTarget > 0 or engine_brake) and not currently_braking):  # gas
         under_accel_frame_count = self.acc_gas(CS, aTarget, vTarget, under_accel_frame_count)
+
+      elif aTarget < 0:  # brake
+        self.acc_brake(CS, aTarget, vTarget, speed_to_far_off)
 
       elif self.last_brake is not None:  # let up on the brake
         self.last_brake += BRAKE_CHANGE
@@ -139,27 +144,28 @@ class CarController():
 
       elif self.last_torque is not None:  # let up on gas
         self.last_torque -= TORQ_RELEASE_CHANGE
-        if self.last_torque < ACCEL_TORQ_MIN:
+        if self.last_torque <= max(0, CS.torqMin):
           self.last_torque = None
 
       if stop_req:
-        brake = -2
-        torque = self.last_torque = 0
+        flux = acc_2_counter / -50.  # flux the brake while stopped
+        brake = self.last_brake = -2 + flux
+        torque = self.last_torque = None
       elif go_req:
-        brake = 4
+        brake = self.last_brake = None
         torque = math.floor(self.last_torque * 100) / 100
       elif self.last_brake:
         brake = math.floor(self.last_brake * 100) / 100
-        torque = self.last_torque = 0
+        torque = self.last_torque = None
       elif self.last_torque:
-        brake = 4
+        brake = self.last_brake = None
         torque = math.floor(self.last_torque * 100) / 100
       else:  # coasting
-        brake = 4
-        torque = self.last_torque = 0
+        brake = self.last_brake = None
+        torque = self.last_torque = None
     else:
-      self.last_torque = 0
-      self.last_brake = 0
+      self.last_torque = None
+      self.last_brake = None
       stop_req = None
       brake = None
       go_req = None
@@ -172,15 +178,15 @@ class CarController():
     self.last_aTarget = CS.out.aEgo
 
     can_sends.append(acc_log(self.packer, self.torq_adjust, aTarget, vTarget, long_starting, long_stopping))
-    
-    can_sends.append(acc_command(self.packer, acc_2_counter + 2, True,
+
+    can_sends.append(acc_command(self.packer, acc_2_counter + 1, True,
                                  go_req,
                                  torque,
-                                 stop_req,
+                                 stop_req and acc_2_counter % 2 == 0,
                                  brake,
                                  CS.acc_2))
     if self.hybrid:
-      can_sends.append(acc_hybrid_command(self.packer, acc_2_counter + 2, True,
+      can_sends.append(acc_hybrid_command(self.packer, acc_2_counter + 1, True,
                                           torque,
                                           CS.acc_1))
 
@@ -190,22 +196,15 @@ class CarController():
 
     return (VEHICLE_MASS * aTarget * vTarget) / (.105 * CS.gasRpm)
 
-  def acc_min_max(self, CS):
-    if self.hybrid:
-      return CS.hybridAxleTorq["AXLE_TORQ_MIN"], CS.hybridAxleTorq["AXLE_TORQ_MAX"]
-
-    return CS.acc_2["ACC_TORQ"], ACCEL_TORQ_MAX
-
   def acc_gas(self, CS, aTarget, vTarget, under_accel_frame_count):
-    accel_min, accel_max = self.acc_min_max(CS)
     if self.hybrid:
-      aSmoothTarget = (aTarget + CS.out.aEgo) / 2  # always smooth since hybrid has lots of torq
+      aSmoothTarget = (aTarget + CS.out.aEgo) / 2  # always smooth since hybrid has lots of torq?
       cruise = aSmoothTarget * ACCEL_TO_NM
     else:
       rpm = CS.gasRpm
       if CS.out.vEgo < SLOW_WINDOW:
         cruise = (VEHICLE_MASS * aTarget * vTarget) / (.105 * rpm)
-        cruise += ACCEL_TORQ_LOW * (1 - (CS.out.vEgo / SLOW_WINDOW))
+        cruise += ACCEL_TORQ_SLOW * (1 - (CS.out.vEgo / SLOW_WINDOW))
       else:
         vSmoothTarget = (vTarget + CS.out.vEgo) / 2
         accelerating = vTarget - COAST_WINDOW * CV.MS_TO_MPH > CS.out.vEgo and aTarget > 0 and CS.out.aEgo > 0 and CS.out.aEgo > self.last_aTarget
@@ -223,17 +222,22 @@ class CarController():
       if self.ccframe - self.under_accel_frame_count > START_ADJUST_ACCEL_FRAMES:
         self.torq_adjust += offset * (1 / CarInterface.eco_multiplier())
 
-    if cruise + self.torq_adjust > accel_max:  # keep the adjustment in check
-      self.torq_adjust = max(0., accel_max - self.torq_adjust)
+    if cruise + self.torq_adjust > CS.torqMax:  # keep the adjustment in check
+      self.torq_adjust = max(0., CS.torqMax - cruise)
 
     torque = cruise + self.torq_adjust
+
+    # use new value if it's higher, or we are accel to much
     if self.last_torque is None:
       self.last_torque = torque / 2
-    if self.last_torque < torque:
-      self.last_torque += ADJUST_ACCEL_COOLDOWN
+
+    diff = max(abs(torque - self.last_torque) / 25, MIN_TORQ_CHANGE)
+    if torque < self.last_torque:
+      self.last_torque -= diff
     else:
-      self.last_torque -= ADJUST_ACCEL_COOLDOWN
-    self.last_torque = max(accel_min, min(accel_max, torque))
+      self.last_torque += diff
+
+    self.last_torque = max(CS.torqMin, min(CS.torqMax, self.last_torque))
 
     return under_accel_frame_count
 
@@ -319,13 +323,26 @@ class CarController():
     if self.longControl:
       if pcm_cancel_cmd or CS.button_pressed(ButtonType.cancel) or CS.out.brakePressed:
         CS.accEnabled = False
-      elif CS.button_pressed(ButtonType.accelCruise) or CS.button_pressed(ButtonType.decelCruise) or CS.button_pressed(
-          ButtonType.resumeCruise):
+      elif CS.button_pressed(ButtonType.accelCruise) or \
+          CS.button_pressed(ButtonType.decelCruise) or \
+          CS.button_pressed(ButtonType.resumeCruise):
         CS.accEnabled = True
 
       if CS.reallyEnabled:
         new_msg = create_wheel_buttons_command(self.packer, button_counter + 1, ['ACC_CANCEL'])
         can_sends.append(new_msg)
+
+      accDiff = None
+      if CS.button_pressed(ButtonType.followInc, False):
+        if jvepilot_state.carControl.accEco < 2:
+          accDiff = 1
+      elif CS.button_pressed(ButtonType.followDec, False):
+        if jvepilot_state.carControl.accEco > 0:
+          accDiff = -1
+      if accDiff is not None:
+        jvepilot_state.carControl.accEco += accDiff
+        put_nonblocking("jvePilot.carState.accEco", str(jvepilot_state.carControl.accEco))
+        jvepilot_state.notifyUi = True
 
     else:
       button_counter_offset = 1
