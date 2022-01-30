@@ -113,7 +113,7 @@ class CarController():
       self.longControls = None
       return
 
-    if counter_change and self.longControls:
+    if counter_change and self.longControls is not None:
       self.send_long_controls(can_sends, CS, acc_2_counter)
       self.longControls = None
       return
@@ -194,14 +194,14 @@ class CarController():
     self.send_long_controls(can_sends, CS, acc_2_counter + 0 if counter_change else 1)
 
   def send_long_controls(self, can_sends, CS, counter):
-    can_sends.append(acc_command(self.packer, counter + 1, True,
+    can_sends.append(acc_command(self.packer, counter, True,
                                  self.longControls["go_req"],
                                  self.longControls["torque"],
                                  self.longControls["stop_req"],
                                  self.longControls["brake"],
                                  CS.acc_2))
     if self.hybrid:
-      can_sends.append(acc_hybrid_command(self.packer, counter + 1, True,
+      can_sends.append(acc_hybrid_command(self.packer, counter, True,
                                           self.longControls["torque"],
                                           CS.acc_1))
 
@@ -241,7 +241,7 @@ class CarController():
       self.torq_adjust = max(0., CS.torqMax - cruise)
 
     torque = cruise + self.torq_adjust
-    self.last_torque = max(CS.torqMin * .95, min(CS.torqMax, torque))
+    self.last_torque = max(CS.torqMin + 1, min(CS.torqMax, torque))
 
     return under_accel_frame_count
 
