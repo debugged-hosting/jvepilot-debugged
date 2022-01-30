@@ -38,6 +38,7 @@ START_ADJUST_ACCEL_FRAMES = 100
 ADJUST_ACCEL_COOLDOWN = 0.2
 MIN_TORQ_CHANGE = 2
 ACCEL_TO_NM = 1200
+TORQ_BRAKE_MAX = -0.1
 
 # braking
 BRAKE_CHANGE = 0.06
@@ -64,6 +65,7 @@ class CarController():
     self.under_accel_frame_count = 0
     self.ccframe = 0
     self.hybrid = self.car_fingerprint in (CAR.PACIFICA_2017_HYBRID, CAR.PACIFICA_2018_HYBRID, CAR.PACIFICA_2019_HYBRID)
+    self.longControls = None
 
     self.packer = CANPacker(dbc_name)
 
@@ -103,13 +105,17 @@ class CarController():
 
     counter_change = acc_2_counter != self.last_acc_2_counter
     self.last_acc_2_counter = acc_2_counter
-    if not counter_change:
-      return
 
     if not enabled:
       self.torq_adjust = 0
       self.last_brake = None
       self.last_torque = None
+      self.longControls = None
+      return
+
+    if counter_change and self.longControls:
+      self.send_long_controls(can_sends, CS, acc_2_counter)
+      self.longControls = None
       return
 
     under_accel_frame_count = 0
@@ -128,10 +134,10 @@ class CarController():
         self.last_brake = None
 
       currently_braking = self.last_brake is not None
-      speed_to_far_off = CS.out.vEgo - vTarget > CV.MPH_TO_MS * 2  # gap
-      engine_brake = aTarget <= 0 and self.torque(CS, aTarget, vTarget) > CS.torqMin and vTarget > LOW_WINDOW
+      speed_to_far_off = CS.out.vEgo - vTarget > COAST_WINDOW  # gap
+      engine_brake = TORQ_BRAKE_MAX < aTarget < 0 and not speed_to_far_off and vTarget > LOW_WINDOW
 
-      if go_req or ((aTarget > 0 or engine_brake) and not currently_braking):  # gas
+      if go_req or ((aTarget >= 0 or engine_brake) and not currently_braking):  # gas
         under_accel_frame_count = self.acc_gas(CS, aTarget, vTarget, under_accel_frame_count)
 
       elif aTarget < 0:  # brake
@@ -179,27 +185,24 @@ class CarController():
 
     can_sends.append(acc_log(self.packer, self.torq_adjust, aTarget, vTarget, long_starting, long_stopping))
 
-    can_sends.append(acc_command(self.packer, acc_2_counter + 0, True,
-                                 go_req,
-                                 torque,
-                                 stop_req and acc_2_counter % 2 == 0,
-                                 brake,
-                                 CS.acc_2))
-    can_sends.append(acc_command(self.packer, acc_2_counter + 1, True,
-                                 go_req,
-                                 torque,
-                                 stop_req and acc_2_counter % 2 == 0,
-                                 brake,
-                                 CS.acc_2))
-    can_sends.append(acc_command(self.packer, acc_2_counter + 2, True,
-                                 go_req,
-                                 torque,
-                                 stop_req and acc_2_counter % 2 == 0,
-                                 brake,
+    self.longControls = {
+      "go_req": go_req,
+      "torque": torque,
+      "stop_req": stop_req and acc_2_counter % 2 == 0,
+      "brake": brake
+    }
+    self.send_long_controls(can_sends, CS, acc_2_counter + 0 if counter_change else 1)
+
+  def send_long_controls(self, can_sends, CS, counter):
+    can_sends.append(acc_command(self.packer, counter + 1, True,
+                                 self.longControls["go_req"],
+                                 self.longControls["torque"],
+                                 self.longControls["stop_req"],
+                                 self.longControls["brake"],
                                  CS.acc_2))
     if self.hybrid:
-      can_sends.append(acc_hybrid_command(self.packer, acc_2_counter + 1, True,
-                                          torque,
+      can_sends.append(acc_hybrid_command(self.packer, counter + 1, True,
+                                          self.longControls["torque"],
                                           CS.acc_1))
 
   def torque(self, CS, aTarget, vTarget):
@@ -238,18 +241,7 @@ class CarController():
       self.torq_adjust = max(0., CS.torqMax - cruise)
 
     torque = cruise + self.torq_adjust
-
-    # use new value if it's higher, or we are accel to much
-    if self.last_torque is None:
-      self.last_torque = torque / 2
-
-    diff = max(abs(torque - self.last_torque) / 25, MIN_TORQ_CHANGE)
-    if torque < self.last_torque:
-      self.last_torque -= diff
-    else:
-      self.last_torque += diff
-
-    self.last_torque = max(CS.torqMin, min(CS.torqMax, self.last_torque))
+    self.last_torque = max(CS.torqMin * .95, min(CS.torqMax, torque))
 
     return under_accel_frame_count
 
